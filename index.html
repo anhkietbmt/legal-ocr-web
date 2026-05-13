@@ -36,53 +36,53 @@
     </main>
 
     <script>
-        // --- 1. CẤU HÌNH (THAY THÔNG TIN CỦA BẠN VÀO ĐÂY) ---
-        const SUPABASE_URL = "https://pvdwqtsvulgybvzljvau.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2ZHdxdHN2dWxneWJ2emxqdmF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2Mzk1NDAsImV4cCI6MjA5NDIxNTU0MH0.kuPIxqUzRuyTOKqhFM80eEsF32rJ4vT8IiffGUoxza8";
-        const HF_API_URL = "https://huggingface.co/spaces/SKDTeam/legalocr";
-        // ----------------------------------------------------
+    // Chỉ giữ lại DUY NHẤT một đoạn này trong file
+    const SUPABASE_URL = "https://pvdwqtsvulgybvzljvau.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2ZHdxdHN2dWxneWJ2emxqdmF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2Mzk1NDAsImV4cCI6MjA5NDIxNTU0MH0.kuPIxqUzRuyTOKqhFM80eEsF32rJ4vT8IiffGUoxza8";
+    const HF_API_URL = "https://huggingface.co/spaces/SKDTeam/legalocr";
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Khởi tạo Supabase chỉ một lần duy nhất
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Đăng nhập Google
-        document.getElementById('login-btn').onclick = async () => {
-            await supabase.auth.signInWithOAuth({ provider: 'google' });
-        };
+    // Đăng nhập Google
+    document.getElementById('login-btn').onclick = async () => {
+        await supabase.auth.signInWithOAuth({ provider: 'google' });
+    };
 
-        // Xử lý OCR
-        document.getElementById('process-btn').onclick = async () => {
-            const fileInput = document.getElementById('file-input');
-            if (fileInput.files.length === 0) return alert("Vui lòng chọn ảnh!");
+    // Xử lý OCR
+    document.getElementById('process-btn').onclick = async () => {
+        const fileInput = document.getElementById('file-input');
+        if (fileInput.files.length === 0) return alert("Vui lòng chọn ảnh!");
 
-            const user = await supabase.auth.getUser();
-            if (!user.data.user) return alert("Vui lòng đăng nhập để sử dụng!");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return alert("Vui lòng đăng nhập trước!");
 
-            document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('loading').classList.remove('hidden');
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const res = await fetch(HF_API_URL, { method: 'POST', body: formData });
+            const data = await res.json();
             
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            try {
-                // 1. Gọi API Hugging Face
-                const res = await fetch(HF_API_URL, { method: 'POST', body: formData });
-                const data = await res.json();
+            if (data.corrected) {
                 document.getElementById('output-text').value = data.corrected;
                 document.getElementById('result-area').classList.remove('hidden');
 
-                // 2. Lưu vào Supabase
+                // Lưu vào Supabase
                 await supabase.from('ocr_history').insert([
-                    { 
-                        user_id: user.data.user.id, 
-                        result_text: data.corrected,
-                        image_url: 'uploaded_by_user' 
-                    }
+                    { user_id: user.id, result_text: data.corrected, image_url: 'uploaded' }
                 ]);
-            } catch (err) {
-                alert("Lỗi: " + err);
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
+            } else {
+                alert("Lỗi từ server AI: " + JSON.stringify(data));
             }
-        };
-    </script>
+        } catch (err) {
+            alert("Lỗi kết nối: " + err);
+        } finally {
+            document.getElementById('loading').classList.add('hidden');
+        }
+    };
+</script>
 </body>
 </html>
