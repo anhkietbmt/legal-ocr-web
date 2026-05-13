@@ -39,7 +39,7 @@
     </main>
 
     <script>
-        const HF_API_URL = "URL_SPACE_HUGGING_FACE_CỦA_BẠN/ocr";
+        const HF_API_URL = "https://huggingface.co/spaces/SKDTeam/legalocr";
 
         async function handleUpload(file) {
             document.getElementById('loading').classList.remove('hidden');
@@ -49,7 +49,7 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch(HF_API_URL, {
+                const response = await fetch(sb_publishable_pBOiwmECbp7mZSWBj9OfQw_lpymItu3, {
                     method: 'POST',
                     body: formData
                 });
